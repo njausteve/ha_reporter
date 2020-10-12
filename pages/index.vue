@@ -1,88 +1,175 @@
 <template>
   <div>
-    <a-layout id="components-layout-demo-fixed">
-      <a-layout-content :style="{ padding: '0 50px', marginTop: '64px' }">
-        <div :style="{ background: '#fff', padding: '24px', minHeight: '380px' }">
-          <div class="container">
-            <a-upload-dragger
-              name="file"
-              :accept="FileTypeToUpload"
-              :multiple="false"
-              action="api/upload"
-              @change="handleChange"
+    <a-layout>
+      <a-layout-header style="background: white;" />
+      <a-layout-content style="background: white;">
+        <a-row type="flex" justify="center" style="height: 80vh; margin-top: 60px;">
+          <a-col :span="4">
+            <a-steps
+              size="default"
+              :current="current"
+              direction="vertical"
+              style="height: 100px;"
             >
-              <div class="" :style="{padding: '10px 40px 30px'}">
-                <p class="ant-upload-drag-icon">
-                  <a-icon type="inbox" />
-                </p>
-                <p class="ant-upload-text">
-                  Click or drag excel template file to this area to upload
-                </p>
-                <p class="ant-upload-hint">
-                  You can only upload excel files
-                </p>
+              <a-step
+                v-for="item in steps"
+                :key="item.title"
+                :title="item.title"
+                :description="item.description"
+              />
+            </a-steps>
+          </a-col>
+          <a-col :span="10">
+            <div class="steps-content">
+              <!-- {{ steps[current].content }} -->
+
+              <div v-show="current === 1">
+                <h1>Step 2</h1>
+                <h3>Choose the Outstanding claims sheet at beginning of reporting period</h3>
+                <p>Claims Outstanding at the begining of the reporting period needs to include the following column names</p>
+                <ul>
+                  <li>field 1 </li>
+                  <li>field 2</li>
+                  <li>field 3</li>
+                  <li>field 4</li>
+                </ul>
+
+                <div>
+                  <a-upload
+                    :file-list="fileList"
+                    list-type="picture"
+                    :accept="excelFormats"
+                    :remove="handleRemove"
+                    :before-upload="beforeUpload"
+                  >
+                    <a-button v-show="fileList.length < 1">
+                      <a-icon type="upload" /> Select {{ files[0] }} File
+                    </a-button>
+                  </a-upload>
+                </div>
               </div>
-            </a-upload-dragger>
-          </div>
-        </div>
+
+              <div v-show="current === 2">
+                <h1>Step 2</h1>
+                <h3>Choose the paid claims sheet</h3>
+                <p>These are the claims paid by the insurers during the reporting period. Required fields include</p>
+                <ul>
+                  <li>field 1 </li>
+                  <li>field 2</li>
+                  <li>field 3</li>
+                  <li>field 4</li>
+                </ul>
+
+                <div>
+                  <a-upload
+                    :file-list="paidFileList"
+                    list-type="picture"
+                    :accept="excelFormats"
+                    :remove="handleRemove"
+                    :before-upload="beforeUpload"
+                  >
+                    <a-button v-show="paidFileList.length < 1">
+                      <a-icon type="upload" /> Select {{ files[2] }} File
+                    </a-button>
+                  </a-upload>
+                </div>
+              </div>
+            </div>
+          </a-col>
+        </a-row>
       </a-layout-content>
+      <a-layout-footer style="position: fixed; bottom: 0; width: 100%;">
+        <div class="steps-action">
+          <a-button v-if="current < steps.length - 1" type="primary" @click="next">
+            Next
+          </a-button>
+          <a-button
+            v-if="current == steps.length - 1"
+            type="primary"
+            @click="$message.success('Processing complete!')"
+          >
+            Done
+          </a-button>
+          <a-button v-if="current > 0" style="margin-left: 8px" @click="prev">
+            Previous
+          </a-button>
+        </div>
+      </a-layout-footer>
     </a-layout>
   </div>
 </template>
-
 <script>
 export default {
   data () {
     return {
-      FileTypeToUpload: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel'
+      excelFormats: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel',
+      fileList: [],
+      current: 0,
+      files: [
+        'beginningEstimate',
+        'intimated',
+        'paid',
+        'endEstimate'
+      ],
+      steps: [
+        {
+          title: 'Step 1',
+          content: 'First-content'
+        },
+        {
+          title: '',
+          content: 'Second-content'
+        },
+        {
+          title: '',
+          content: 'Third-content'
+        },
+        {
+          title: 'Select the Paid sheet',
+          content: 'Second-content'
+        },
+        {
+          title: 'Select the OS End sheet',
+          content: 'Second-content'
+        },
+        {
+          title: 'Generate Report',
+          content: 'Last-content'
+        }
+      ]
     }
   },
   methods: {
-    handleChange (info) {
-      const status = info.file.status
-      if (status !== 'uploading') {
-        // eslint-disable-next-line
-        console.log(info.file, info.fileList);
-      }
-      if (status === 'done') {
-        this.$message.success(`${info.file.name} file uploaded successfully.`)
-      } else if (status === 'error') {
-        this.$message.error(`${info.file.name} file upload failed.`)
-      }
+    next () {
+      this.current++
+    },
+    prev () {
+      this.current--
+    },
+    handleRemove (file) {
+      const index = this.fileList.indexOf(file)
+      const newFileList = this.fileList.slice()
+      newFileList.splice(index, 1)
+      this.fileList = newFileList
+    },
+    beforeUpload (file) {
+      this.fileList = [...this.fileList, file]
+
+      // eslint-disable-next-line no-console
+      console.log('file', file)
+
+      return false
     }
   }
 }
 </script>
-
-<style>
-.container {
-  margin: 0 auto;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+<style scoped>
+.steps-content {
+  margin-left: 50px;
+  height: 80vh;
 }
 
-.title {
-  font-family: "Quicksand", "Source Sans Pro", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  display: block;
-  font-weight: 300;
-  font-size: 100px;
-  color: #35495e;
-  letter-spacing: 1px;
-}
-
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-
-.links {
-  padding-top: 15px;
+.steps-action {
+  margin-top: 24px;
 }
 </style>
