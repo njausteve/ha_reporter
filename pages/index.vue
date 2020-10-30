@@ -12,8 +12,9 @@
               style="height: 100px;"
             >
               <a-step
-                v-for="item in steps"
-                :key="item.title"
+                v-for="(item, index) in steps"
+                :key="index"
+                :status="item.status"
                 :title="item.title"
                 :description="item.description"
               />
@@ -21,64 +22,118 @@
           </a-col>
           <a-col :span="10">
             <div class="steps-content">
-              <!-- {{ steps[current].content }} -->
-
-              <div v-show="current === 1">
-                <h1>Step 2</h1>
-                <h3>Choose the Outstanding claims sheet at beginning of reporting period</h3>
-                <p>Claims Outstanding at the begining of the reporting period needs to include the following column names</p>
-                <ul>
-                  <li>field 1 </li>
-                  <li>field 2</li>
-                  <li>field 3</li>
-                  <li>field 4</li>
-                </ul>
-
-                <div>
-                  <a-upload
-                    :file-list="fileList"
-                    list-type="picture"
-                    :accept="excelFormats"
-                    :remove="handleRemove"
-                    :before-upload="beforeUpload"
+              <div v-if="steps[current].valid !== null && steps[current].valid">
+                <a-result
+                  status="success"
+                  title="Successfully Purchased Cloud Server ECS!"
+                  sub-title="Order number: 2017182818828182881 Cloud server configuration takes 1-5 minutes, please wait."
+                />
+                <div class="" :style="{display: 'flex', justifyContent: 'center'}">
+                  <a-button
+                    v-if="current > 0"
+                    key="console"
+                    size="large"
+                    style="margin-left: 8px"
+                    @click="prev"
                   >
-                    <a-button v-show="fileList.length < 1">
-                      <a-icon type="upload" /> Select {{ files[0] }} File
-                    </a-button>
-                  </a-upload>
+                    <a-icon type="left" />
+                    Go Back
+                  </a-button>
+                  <a-button
+                    v-if="current < steps.length - 1"
+                    key="buy"
+                    style="margin-left: 30px"
+                    size="large"
+                    type="primary"
+                    @click="next"
+                  >
+                    Next
+                    <a-icon type="right" />
+                  </a-button>
                 </div>
               </div>
-
-              <div v-show="current === 2">
-                <h1>Step 2</h1>
-                <h3>Choose the paid claims sheet</h3>
-                <p>These are the claims paid by the insurers during the reporting period. Required fields include</p>
-                <ul>
-                  <li>field 1 </li>
-                  <li>field 2</li>
-                  <li>field 3</li>
-                  <li>field 4</li>
-                </ul>
-
-                <div>
-                  <a-upload
-                    :file-list="paidFileList"
-                    list-type="picture"
-                    :accept="excelFormats"
-                    :remove="handleRemove"
-                    :before-upload="beforeUpload"
+              <div v-if="steps[current].valid !== null && !steps[current].valid">
+                <div class="">
+                  <a-result
+                    status="error"
+                    title="File check Failed"
+                    sub-title="Please check and modify the following information before resubmitting."
                   >
-                    <a-button v-show="paidFileList.length < 1">
-                      <a-icon type="upload" /> Select {{ files[2] }} File
+                    <div class="desc">
+                      <p style="font-size: 16px;">
+                        <strong>The file you submitted has the following errors:</strong>
+                      </p>
+                      <p>
+                        <a-icon :style="{ color: 'red' }" type="close-circle" /> Your account has been frozen
+                        <a>Thaw immediately &gt;</a>
+                      </p>
+                      <p>
+                        <a-icon :style="{ color: 'red' }" type="close-circle" /> Your account is not yet eligible to
+                        apply <a>Apply Unlock &gt;</a>
+                      </p>
+                    </div>
+                  </a-result>
+                  <div class="" :style="{display: 'flex', justifyContent: 'center'}">
+                    <a-button
+                      v-if="current > 0"
+                      key="console"
+                      size="large"
+                      style="margin-left: 8px"
+                      @click="steps[current].valid = null"
+                    >
+                      okay got it
+                      <a-icon type="like" />
                     </a-button>
-                  </a-upload>
+                  </div>
+                </div>
+              </div>
+              <div
+                v-for="(name, index) in fileNames"
+                :key="index"
+              >
+                <div v-show="current === Object.keys(fileNames).indexOf(index) + 1">
+                  <a-spin :delay="500" tip="Loading..." :spinning="steps[current].validating">
+                    <div v-show="steps[current].valid === null" class="spin-content">
+                      <div>
+                        <h1>Step {{ Object.keys(fileNames).indexOf(index) + 2 }}</h1>
+                        <div class="ant-result-content">
+                          <h3>Choose the Outstanding claims sheet at beginning of reporting period</h3>
+                          <p>Claims Outstanding at the begining of the reporting period needs to include the following column names</p>
+                          <ul>
+                            <li>field 1 </li>
+                            <li>field 2</li>
+                            <li>field 3</li>
+                            <li>field 4</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="margin-top: 45px">
+                      <div v-if="steps[current].valid === null">
+                        <div>
+                          <FileSelect v-model="fileNames[index]" @input="validateInput" />
+                          <span v-show="fileNames[index].name">
+                            <a-icon type="file-excel" />
+                            {{ fileNames[index].name }}
+                          </span>
+
+                          <a-button type="primary" :disabled="!fileNames[index].name" @click="handleValidateClick(steps[current])">
+                            validate file
+                          </a-button>
+                        </div>
+                      </div>
+                    </div>
+                  </a-spin>
                 </div>
               </div>
             </div>
           </a-col>
         </a-row>
       </a-layout-content>
-      <a-layout-footer style="position: fixed; bottom: 0; width: 100%;">
+      <a-layout-footer
+        v-show="current === Object.keys(fileNames).indexOf(index) + 1"
+        style="position: fixed; bottom: 0; width: 100%;"
+      >
         <div class="steps-action">
           <a-button v-if="current < steps.length - 1" type="primary" @click="next">
             Next
@@ -102,39 +157,48 @@
 export default {
   data () {
     return {
-      excelFormats: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel',
-      fileList: [],
       current: 0,
-      files: [
-        'beginningEstimate',
-        'intimated',
-        'paid',
-        'endEstimate'
-      ],
+      fileList: [],
+      file: null,
+      fileNames: {
+        beginningEstimate: { file: null },
+        intimated: { file: null },
+        paid: { file: null },
+        endEstimate: { file: null }
+      },
       steps: [
         {
           title: 'Step 1',
-          content: 'First-content'
+          content: 'First-content',
+          validating: false,
+          valid: null
         },
         {
           title: '',
-          content: 'Second-content'
+          content: 'Second-content',
+          validating: false,
+          valid: null
         },
         {
           title: '',
-          content: 'Third-content'
+          content: 'Third-content',
+          validating: false,
+          valid: null
         },
         {
           title: 'Select the Paid sheet',
-          content: 'Second-content'
+          content: 'Second-content',
+          validating: null
         },
         {
           title: 'Select the OS End sheet',
-          content: 'Second-content'
+          content: 'Second-content',
+          validating: null
         },
         {
           title: 'Generate Report',
-          content: 'Last-content'
+          content: 'Last-content',
+          validating: null
         }
       ]
     }
@@ -146,19 +210,42 @@ export default {
     prev () {
       this.current--
     },
+    validateInput (e) {
+      // eslint-disable-next-line no-console
+      console.log('e', e)
+
+      // eslint-disable-next-line no-console
+      console.log('filelist before', this.fileList)
+      this.fileList.push(e)
+
+      // eslint-disable-next-line no-console
+      console.log('filelist after', this.fileList)
+    },
     handleRemove (file) {
       const index = this.fileList.indexOf(file)
       const newFileList = this.fileList.slice()
       newFileList.splice(index, 1)
       this.fileList = newFileList
     },
-    beforeUpload (file) {
-      this.fileList = [...this.fileList, file]
+    async handleValidateClick (step) {
+      step.validating = true
 
-      // eslint-disable-next-line no-console
-      console.log('file', file)
+      try {
+        const response = await this.delay(4000)
+        // eslint-disable-next-line no-console
+        console.log(response)
 
-      return false
+        step.valid = false
+        step.valid ? step.status = 'success' : step.status = 'error'
+        step.validating = false
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.log(err)
+        step.validating = false
+      }
+    },
+    delay (ms) {
+      return new Promise(resolve => setTimeout(resolve, ms))
     }
   }
 }

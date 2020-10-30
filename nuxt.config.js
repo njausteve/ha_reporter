@@ -1,5 +1,6 @@
 module.exports = {
   mode: 'universal',
+  components: true,
   telemetry: false,
   /*
   ** Headers of the page
